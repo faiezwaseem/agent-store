@@ -6,6 +6,9 @@ import {
   MIN_TOPUP_ACOIN,
   PLATFORM_FEE_ACOIN,
   MCP_SIGNUP_KEY,
+  createAgent,
+  createServiceForAgent,
+  findAgentByApiKey,
   nowIso,
   normalizeText,
   publicAgent,
@@ -39,7 +42,7 @@ function rpcError(id: unknown, code: number, message: string) {
 async function authenticateAgent(req: NextRequest) {
   const store = await readStore();
   const apiKey = normalizeText(req.headers.get("x-agent-key"));
-  const agent = store.agents.find((item) => item.apiKey === apiKey) ?? null;
+  const agent = findAgentByApiKey(store, apiKey);
   return { store, agent };
 }
 
@@ -54,38 +57,26 @@ export async function POST(req: NextRequest) {
   }
 
   if (method === "register_agent") {
-    const store = await readStore();
     const signupKey = normalizeText(req.headers.get("x-mcp-signup-key"));
     if (signupKey !== MCP_SIGNUP_KEY) {
       return NextResponse.json(rpcError(id, 403, "Invalid MCP signup key."), { status: 403 });
     }
 
-    const name = normalizeText(params.name);
-    const endpoint = normalizeText(params.endpoint);
-    if (!name || !endpoint) {
-      return NextResponse.json(rpcError(id, 400, "name and endpoint are required."), { status: 400 });
+    try {
+      const { agent } = await createAgent({
+        name: params.name,
+        endpoint: params.endpoint,
+        description: params.description,
+        capabilities: sanitizeArray(params.capabilities)
+      });
+
+      return NextResponse.json(rpcResult(id, { agent: publicAgent(agent), apiKey: agent.apiKey }));
+    } catch (error) {
+      return NextResponse.json(
+        rpcError(id, 400, error instanceof Error ? error.message : "Unable to register agent."),
+        { status: 400 }
+      );
     }
-
-    const agent = {
-      id: randomId("agent"),
-      name,
-      description: normalizeText(params.description),
-      endpoint,
-      capabilities: sanitizeArray(params.capabilities),
-      apiKey: randomApiKey(),
-      wallet: {
-        availableACoin: 0,
-        escrowedACoin: 0,
-        totalSpentACoin: 0,
-        totalEarnedACoin: 0
-      },
-      createdAt: nowIso()
-    };
-
-    store.agents.push(agent);
-    await writeStore(store);
-
-    return NextResponse.json(rpcResult(id, { agent: publicAgent(agent), apiKey: agent.apiKey }));
   }
 
   const { store, agent } = await authenticateAgent(req);
@@ -213,35 +204,24 @@ export async function POST(req: NextRequest) {
   }
 
   if (method === "create_service") {
-    const title = normalizeText(params.title);
-    const summary = normalizeText(params.summary);
-    const category = normalizeText(params.category, "General");
-    const priceACoin = Number(params.priceACoin ?? params.priceAmount);
+    try {
+      const { store: nextStore, service } = await createServiceForAgent(agent.apiKey, {
+        title: params.title,
+        summary: params.summary,
+        category: params.category,
+        tags: sanitizeArray(params.tags),
+        priceModel: params.priceModel,
+        priceACoin: Number(params.priceACoin ?? params.priceAmount),
+        slaHours: params.slaHours
+      });
 
-    if (!title || !summary || !Number.isFinite(priceACoin) || priceACoin <= 0) {
+      return NextResponse.json(rpcResult(id, { service: publicService(service, nextStore) }));
+    } catch (error) {
       return NextResponse.json(
-        rpcError(id, 400, "title, summary, and a positive priceACoin are required."),
+        rpcError(id, 400, error instanceof Error ? error.message : "Unable to create service."),
         { status: 400 }
       );
     }
-
-    const service = {
-      id: randomId("svc"),
-      sellerAgentId: agent.id,
-      title,
-      summary,
-      category,
-      tags: sanitizeArray(params.tags),
-      priceModel: normalizeText(params.priceModel, "fixed"),
-      priceACoin,
-      slaHours: Number.parseInt(String(params.slaHours ?? "24"), 10),
-      status: "active" as const,
-      createdAt: nowIso()
-    };
-
-    store.services.push(service);
-    await writeStore(store);
-    return NextResponse.json(rpcResult(id, { service: publicService(service, store) }));
   }
 
   if (method === "buy_service") {

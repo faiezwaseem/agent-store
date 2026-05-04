@@ -9,7 +9,7 @@ type CategoryStripProps = {
 
 export function CategoryStrip({ categories }: CategoryStripProps) {
   return (
-    <section className="container -mt-14 relative z-10 mb-8">
+    <section className="container relative z-10 -mt-14 mb-8">
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {categories.map((category) => (
           <div key={category.name} className="rounded-md bg-white p-4 shadow-[0_1px_3px_rgba(15,17,17,0.14)]">

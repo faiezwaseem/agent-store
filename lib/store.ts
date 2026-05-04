@@ -109,6 +109,15 @@ export type StoreState = {
   };
 };
 
+export type CatalogFilters = {
+  search?: string;
+  categories?: string[];
+  sellers?: string[];
+  minRating?: number;
+  maxPrice?: number;
+  sort?: "newest" | "most-reviewed" | "highest-rated" | "price-asc" | "price-desc" | "fastest-delivery";
+};
+
 const DATA_DIR = path.join(process.cwd(), "data");
 const STORE_FILE = path.join(DATA_DIR, "store.json");
 export const MCP_SIGNUP_KEY = process.env.MCP_SIGNUP_KEY ?? "local-dev-agent-key";
@@ -561,6 +570,14 @@ export function randomApiKey() {
   return `agt_${Math.random().toString(16).slice(2)}${Math.random().toString(16).slice(2)}`;
 }
 
+export function slugifyIdPart(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 40);
+}
+
 export function publicAgent(agent: AgentRecord) {
   return {
     id: agent.id,
@@ -571,6 +588,15 @@ export function publicAgent(agent: AgentRecord) {
     wallet: agent.wallet,
     createdAt: agent.createdAt
   };
+}
+
+export function findAgentByApiKey(store: StoreState, apiKey: string) {
+  const normalizedKey = normalizeText(apiKey);
+  if (!normalizedKey) {
+    return null;
+  }
+
+  return store.agents.find((agent) => agent.apiKey === normalizedKey) ?? null;
 }
 
 export function publicService(service: ServiceRecord, store: StoreState) {
@@ -628,19 +654,253 @@ export function publicOrder(order: OrderRecord, store: StoreState) {
   };
 }
 
-export async function getCatalog() {
+function sortServices<
+  T extends {
+    createdAt: string;
+    reviewCount: number;
+    averageRating: number | null;
+    priceACoin: number;
+    slaHours: number;
+  }
+>(services: T[], sort: CatalogFilters["sort"]) {
+  const items = [...services];
+
+  switch (sort) {
+    case "highest-rated":
+      return items.sort(
+        (a, b) =>
+          (b.averageRating ?? 0) - (a.averageRating ?? 0) ||
+          b.reviewCount - a.reviewCount ||
+          a.priceACoin - b.priceACoin
+      );
+    case "price-asc":
+      return items.sort((a, b) => a.priceACoin - b.priceACoin || b.reviewCount - a.reviewCount);
+    case "price-desc":
+      return items.sort((a, b) => b.priceACoin - a.priceACoin || b.reviewCount - a.reviewCount);
+    case "fastest-delivery":
+      return items.sort((a, b) => a.slaHours - b.slaHours || b.reviewCount - a.reviewCount);
+    case "newest":
+      return items.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    case "most-reviewed":
+    default:
+      return items.sort(
+        (a, b) =>
+          b.reviewCount - a.reviewCount ||
+          (b.averageRating ?? 0) - (a.averageRating ?? 0) ||
+          b.createdAt.localeCompare(a.createdAt)
+      );
+  }
+}
+
+function matchesCatalogFilters(
+  service: ReturnType<typeof publicService>,
+  filters: CatalogFilters,
+) {
+  const search = normalizeText(filters.search).toLowerCase();
+  const categories = new Set((filters.categories ?? []).map((item) => normalizeText(item).toLowerCase()).filter(Boolean));
+  const sellers = new Set((filters.sellers ?? []).map((item) => normalizeText(item).toLowerCase()).filter(Boolean));
+  const minRating = Number(filters.minRating ?? 0);
+  const maxPrice = Number(filters.maxPrice ?? Number.POSITIVE_INFINITY);
+
+  if (search) {
+    const haystack = [
+      service.title,
+      service.summary,
+      service.category,
+      service.seller?.name ?? "",
+      ...service.tags
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    if (!haystack.includes(search)) {
+      return false;
+    }
+  }
+
+  if (categories.size > 0 && !categories.has(service.category.toLowerCase())) {
+    return false;
+  }
+
+  if (sellers.size > 0 && !sellers.has((service.seller?.name ?? "").toLowerCase())) {
+    return false;
+  }
+
+  if (minRating > 0 && (service.averageRating ?? 0) < minRating) {
+    return false;
+  }
+
+  if (Number.isFinite(maxPrice) && service.priceACoin > maxPrice) {
+    return false;
+  }
+
+  return true;
+}
+
+export async function createAgent(input: {
+  name: string;
+  description?: string;
+  endpoint: string;
+  capabilities?: string[];
+}) {
   const store = await readStore();
+  const name = normalizeText(input.name);
+  const endpoint = normalizeText(input.endpoint);
+
+  if (!name || !endpoint) {
+    throw new Error("name and endpoint are required.");
+  }
+
+  const duplicate = store.agents.find(
+    (agent) => agent.name.toLowerCase() === name.toLowerCase() || agent.endpoint.toLowerCase() === endpoint.toLowerCase()
+  );
+
+  if (duplicate) {
+    throw new Error("An agent with that name or endpoint already exists.");
+  }
+
+  const baseId = slugifyIdPart(name) || "agent";
+  const agent = {
+    id: randomId(baseId.startsWith("agent") ? baseId : `agent_${baseId}`),
+    name,
+    description: normalizeText(input.description),
+    endpoint,
+    capabilities: sanitizeArray(input.capabilities),
+    apiKey: randomApiKey(),
+    wallet: {
+      availableACoin: 0,
+      escrowedACoin: 0,
+      totalSpentACoin: 0,
+      totalEarnedACoin: 0
+    },
+    createdAt: nowIso()
+  };
+
+  store.agents.push(agent);
+  await writeStore(store);
+
+  return { store, agent };
+}
+
+export async function createServiceForAgent(
+  agentApiKey: string,
+  input: {
+    title: string;
+    summary: string;
+    category?: string;
+    tags?: string[];
+    priceModel?: string;
+    priceACoin: number;
+    slaHours?: number;
+  }
+) {
+  const store = await readStore();
+  const agent = findAgentByApiKey(store, agentApiKey);
+  if (!agent) {
+    throw new Error("Missing or invalid agent key.");
+  }
+
+  const title = normalizeText(input.title);
+  const summary = normalizeText(input.summary);
+  const category = normalizeText(input.category, "General");
+  const priceACoin = Number(input.priceACoin);
+  const slaHours = Number.parseInt(String(input.slaHours ?? "24"), 10);
+
+  if (!title || !summary || !Number.isFinite(priceACoin) || priceACoin <= 0) {
+    throw new Error("title, summary, and a positive priceACoin are required.");
+  }
+
+  if (!Number.isFinite(slaHours) || slaHours <= 0) {
+    throw new Error("slaHours must be a positive integer.");
+  }
+
+  const service = {
+    id: randomId("svc"),
+    sellerAgentId: agent.id,
+    title,
+    summary,
+    category,
+    tags: sanitizeArray(input.tags),
+    priceModel: normalizeText(input.priceModel, "fixed"),
+    priceACoin,
+    slaHours,
+    status: "active" as const,
+    createdAt: nowIso()
+  };
+
+  store.services.push(service);
+  await writeStore(store);
+
+  return {
+    store,
+    agent,
+    service
+  };
+}
+
+export async function getAgentDashboard(agentApiKey: string) {
+  const store = await readStore();
+  const agent = findAgentByApiKey(store, agentApiKey);
+
+  if (!agent) {
+    return null;
+  }
+
   const services = store.services
+    .filter((service) => service.sellerAgentId === agent.id)
+    .map((service) => publicService(service, store))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const purchases = store.orders
+    .filter((order) => order.buyerAgentId === agent.id)
+    .map((order) => publicOrder(order, store))
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const sales = store.orders
+    .filter((order) => order.sellerAgentId === agent.id)
+    .map((order) => publicOrder(order, store))
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const transactions = store.ledger
+    .filter((entry) => entry.agentId === agent.id)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, 20);
+
+  return {
+    agent: publicAgent(agent),
+    services,
+    orders: {
+      purchases,
+      sales
+    },
+    wallet: {
+      ...agent.wallet,
+      transactions
+    },
+    pricing: {
+      acoinUsdRate: store.platform.acoinUsdRate,
+      minimumTopupACoin: store.platform.minimumTopupACoin,
+      feePerTransactionACoin: store.platform.feePerTransactionACoin
+    }
+  };
+}
+
+export async function getCatalog(filters: CatalogFilters = {}) {
+  const store = await readStore();
+  const allServices = store.services
     .filter((service) => service.status === "active")
     .map((service) => publicService(service, store));
+  const services = sortServices(
+    allServices.filter((service) => matchesCatalogFilters(service, filters)),
+    filters.sort ?? "most-reviewed"
+  );
   const categories = [...new Set(services.map((service) => service.category))];
+  const sellers = [...new Set(allServices.map((service) => service.seller?.name).filter(Boolean))] as string[];
 
   return {
     stats: {
       agents: store.agents.length,
-      services: services.length,
+      services: allServices.length,
+      filteredServices: services.length,
       orders: store.orders.length,
-      categories: categories.length,
+      categories: [...new Set(allServices.map((service) => service.category))].length,
       feesCollectedACoin: store.platform.feesCollectedACoin
     },
     pricing: {
@@ -648,7 +908,16 @@ export async function getCatalog() {
       minimumTopupACoin: store.platform.minimumTopupACoin,
       feePerTransactionACoin: store.platform.feePerTransactionACoin
     },
-    categories,
+    filters: {
+      search: normalizeText(filters.search),
+      categories: filters.categories ?? [],
+      sellers: filters.sellers ?? [],
+      minRating: Number(filters.minRating ?? 0),
+      maxPrice: Number(filters.maxPrice ?? 0),
+      sort: filters.sort ?? "most-reviewed"
+    },
+    categories: [...new Set(allServices.map((service) => service.category))],
+    sellers,
     services
   };
 }

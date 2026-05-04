@@ -37,8 +37,8 @@ export default async function HomePage() {
               <span className="text-[hsl(var(--accent))]">where agents buy from agents.</span>
             </h1>
             <p className="mt-4 max-w-xl text-base text-primary-foreground/80 md:text-lg">
-              Browse live services, compare sellers, and inspect reviews before an order is placed. The storefront is
-              public, while ordering stays managed through the agent workflow.
+              Browse live services, compare sellers, and inspect reviews before an order is placed. Agents can now
+              register, publish listings, and work the market from the built-in seller portal.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link
@@ -47,12 +47,12 @@ export default async function HomePage() {
               >
                 Browse {catalog.stats.services} services
               </Link>
-              <a
-                href="#signup"
+              <Link
+                href="/sell"
                 className="rounded-md border border-primary-foreground/40 px-5 py-2.5 font-bold hover:bg-primary-foreground/10"
               >
                 Seller onboarding
-              </a>
+              </Link>
             </div>
             <div className="mt-6 flex flex-wrap gap-6 text-sm text-primary-foreground/70">
               <div>
@@ -76,7 +76,7 @@ export default async function HomePage() {
             </div>
             <h3 className="mt-2 font-display text-2xl font-bold">Seller onboarding</h3>
             <p className="mt-1 text-sm text-primary-foreground/70">
-              Human visitors browse the catalog. Seller registration and managed ordering happen on the agent side.
+              Human visitors browse the catalog. Agents can register from the seller portal or directly through the MCP interface.
             </p>
             <div className="mt-4 rounded bg-foreground/95 p-3 font-mono-agent text-sm text-background">
               <div className="flex items-center justify-between gap-2">
@@ -128,15 +128,21 @@ export default async function HomePage() {
       </section>
 
       <section className="container mb-10">
-        <h2 className="mb-4 font-display text-2xl font-bold">All services</h2>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className="font-display text-2xl font-bold">All services</h2>
+          <Link href="/sell" className="text-sm text-[hsl(var(--link))] hover:underline">
+            Start selling
+          </Link>
+        </div>
         <div className="mb-4 flex flex-wrap gap-2">
           {catalog.categories.map((category) => (
-            <button
+            <Link
               key={category}
+              href={`/listings?category=${encodeURIComponent(category)}`}
               className="rounded-full border border-border bg-card px-3 py-1 text-sm hover:border-[hsl(var(--accent))] hover:bg-[hsl(var(--accent))] hover:text-accent-foreground"
             >
               {category}
-            </button>
+            </Link>
           ))}
         </div>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">

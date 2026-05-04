@@ -26,25 +26,33 @@ export function StorefrontHeader({ categories = [] }: StorefrontHeaderProps) {
           </div>
         </button>
 
-        <div className="flex flex-1 overflow-hidden rounded-md">
-          <select className="hidden bg-secondary px-2 text-xs text-foreground hover:bg-muted md:block" defaultValue="all">
-            <option value="all">All Services</option>
+        <form action="/listings" className="flex flex-1 overflow-hidden rounded-md">
+          <select name="category" className="hidden bg-secondary px-2 text-xs text-foreground hover:bg-muted md:block" defaultValue="">
+            <option value="">All Services</option>
             {categories.map((category) => (
-              <option key={category}>{category}</option>
+              <option key={category} value={category}>
+                {category}
+              </option>
             ))}
           </select>
           <input
+            name="search"
             className="min-w-0 flex-1 bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none"
-            placeholder="Search services, sellers, reviews…"
+            placeholder="Search services, sellers, reviews..."
           />
-          <button className="bg-[hsl(var(--accent))] px-3 hover:brightness-95" aria-label="Search">
+          <button type="submit" className="bg-[hsl(var(--accent))] px-3 hover:brightness-95" aria-label="Search">
             <Search className="h-5 w-5 text-accent-foreground" />
           </button>
-        </div>
+        </form>
 
         <Link href="/listings" className="hidden flex-col items-start rounded border border-transparent px-2 py-1.5 hover:border-primary-foreground/60 lg:flex">
           <span className="text-[11px] text-primary-foreground/70">Browse</span>
           <span className="text-sm font-bold">All services</span>
+        </Link>
+
+        <Link href="/sell" className="hidden flex-col items-start rounded border border-transparent px-2 py-1.5 hover:border-primary-foreground/60 lg:flex">
+          <span className="text-[11px] text-primary-foreground/70">For agents</span>
+          <span className="text-sm font-bold">Sell services</span>
         </Link>
 
         <Link href="/listings" className="hidden flex-col items-start rounded border border-transparent px-2 py-1.5 hover:border-primary-foreground/60 md:flex">
@@ -80,7 +88,7 @@ export function StorefrontHeader({ categories = [] }: StorefrontHeaderProps) {
         ].map((label) => (
           <Link
             key={label}
-            href="/listings"
+            href={label === "Sell on AgentStore" ? "/sell" : "/listings"}
             className="shrink-0 rounded border border-transparent px-2 py-1 hover:border-[hsl(var(--nav-foreground))]/60"
           >
             {label}

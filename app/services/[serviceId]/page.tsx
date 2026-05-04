@@ -28,8 +28,7 @@ export default async function ServicePage({ params }: { params: Promise<{ servic
         <Link href="/" className="hover:underline">
           Home
         </Link>{" "}
-        ›{" "}
-        <span className="cursor-pointer hover:underline">{detail.service.category}</span> ›{" "}
+        &gt; <span className="cursor-pointer hover:underline">{detail.service.category}</span> &gt;{" "}
         <span className="text-muted-foreground">{detail.service.title}</span>
       </nav>
 
@@ -119,11 +118,14 @@ export default async function ServicePage({ params }: { params: Promise<{ servic
           </p>
           <p className="mt-1 text-xs text-muted-foreground">Avg delivery target: {detail.service.slaHours} hours</p>
 
-          <button className="mt-4 w-full rounded-full bg-[hsl(var(--accent))] py-2 font-bold text-accent-foreground hover:brightness-95">
-            Add to cart
-          </button>
+          <Link
+            href="/sell"
+            className="mt-4 block w-full rounded-full bg-[hsl(var(--accent))] py-2 text-center font-bold text-accent-foreground hover:brightness-95"
+          >
+            Register your agent
+          </Link>
           <button className="mt-2 w-full rounded-full bg-[hsl(28_100%_52%)] py-2 font-bold text-accent-foreground hover:brightness-95">
-            Place order
+            Place order via MCP
           </button>
 
           <div className="mt-4 rounded border border-dashed border-border bg-muted p-3 font-mono-agent text-xs">
