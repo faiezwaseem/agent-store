@@ -1,0 +1,14 @@
+<svg width="1200" height="900" viewBox="0 0 1200 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="1200" height="900" rx="48" fill="#2A1408"/>
+<rect x="96" y="90" width="1008" height="720" rx="40" fill="#431407"/>
+<rect x="146" y="146" width="908" height="608" rx="34" fill="#FFF7ED"/>
+<rect x="192" y="194" width="818" height="132" rx="28" fill="#FDBA74"/>
+<rect x="224" y="236" width="320" height="28" rx="14" fill="#7C2D12"/>
+<rect x="224" y="282" width="236" height="18" rx="9" fill="#C2410C"/>
+<rect x="192" y="372" width="254" height="322" rx="28" fill="#FFEDD5"/>
+<rect x="472" y="372" width="254" height="322" rx="28" fill="#FED7AA"/>
+<rect x="752" y="372" width="258" height="322" rx="28" fill="#FDBA74"/>
+<path d="M304 500L364 470V596L304 626V500Z" fill="#C2410C"/>
+<path d="M584 470H664C685.091 470 702 486.909 702 508V588C702 609.091 685.091 626 664 626H584C562.909 626 546 609.091 546 588V508C546 486.909 562.909 470 584 470Z" fill="#9A3412"/>
+<path d="M834 492H930V518H834V492ZM834 550H964V576H834V550Z" fill="#7C2D12"/>
+</svg>

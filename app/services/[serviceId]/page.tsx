@@ -1,236 +1,157 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Gavel, MessageCircle, Package, Star, Wallet } from "lucide-react";
+import { Lock, Shield, Star, Zap } from "lucide-react";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { ServiceActions } from "@/components/storefront/service-actions";
+import { StorefrontFooter } from "@/components/storefront/footer";
 import { StorefrontHeader } from "@/components/storefront/header";
-import { getServiceById } from "@/lib/store";
+import { StoreServiceCard } from "@/components/storefront/service-card";
+import { getCatalog, getServiceById } from "@/lib/store";
 
 export default async function ServicePage({ params }: { params: Promise<{ serviceId: string }> }) {
   const { serviceId } = await params;
   const detail = await getServiceById(serviceId);
+  const catalog = await getCatalog();
 
   if (!detail) {
     notFound();
   }
 
+  const more = catalog.services
+    .filter((service) => service.seller?.name === detail.service.seller?.name && service.id !== detail.service.id)
+    .slice(0, 4);
+
   return (
-    <main className="min-h-screen bg-market-grid bg-[size:28px_28px] pb-16">
-      <StorefrontHeader />
-      <div className="container pt-6">
-        <div className="mb-5">
-          <Link
-            href="/"
-            className="inline-flex h-11 items-center gap-2 rounded-xl border bg-card px-5 text-sm font-semibold"
-          >
-            <ArrowLeft data-icon="inline-start" />
-            Back to storefront
-          </Link>
+    <div className="min-h-screen bg-background">
+      <StorefrontHeader categories={catalog.categories} />
+
+      <nav className="container py-3 text-xs text-[hsl(var(--link))]">
+        <Link href="/" className="hover:underline">
+          Home
+        </Link>{" "}
+        ›{" "}
+        <span className="cursor-pointer hover:underline">{detail.service.category}</span> ›{" "}
+        <span className="text-muted-foreground">{detail.service.title}</span>
+      </nav>
+
+      <div className="container grid gap-6 lg:grid-cols-[1fr_1.2fr_320px]">
+        <div className="rounded-md border border-border bg-card p-4 shadow-card">
+          <div className="overflow-hidden rounded bg-gradient-to-br from-secondary to-muted">
+            <img src={detail.service.imagePath} alt={detail.service.title} className="aspect-square h-full w-full object-cover" />
+          </div>
+          <div className="mt-3 grid grid-cols-4 gap-2">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="overflow-hidden rounded border border-border bg-muted">
+                <img src={detail.service.imagePath} alt={detail.service.title} className="aspect-square h-full w-full object-cover" />
+              </div>
+            ))}
+          </div>
         </div>
 
-        <section className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-          <Card className="rounded-[1.8rem] border-[#d9cdb6] shadow-none">
-            <CardHeader className="gap-4 md:flex-row md:items-start md:justify-between">
-              <div>
-                <Badge variant="secondary">{detail.service.category}</Badge>
-                <CardTitle className="mt-3 text-5xl">{detail.service.title}</CardTitle>
-                <CardDescription className="mt-4 max-w-2xl text-base leading-8">
-                  {detail.service.summary}
-                </CardDescription>
-              </div>
-              <div className="rounded-[1.4rem] border bg-[#fffaf2] px-5 py-5 text-right">
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Offer price</p>
-                <p className="mt-2 font-display text-5xl font-extrabold">{detail.service.priceACoin} A</p>
-                <p className="mt-1 text-sm text-muted-foreground">${detail.service.usdPrice.toFixed(2)} USD</p>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {detail.service.tags.map((tag) => (
-                  <Badge key={tag} variant="outline">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-              <Separator className="my-6" />
-              <div className="grid gap-4 md:grid-cols-3">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Seller</p>
-                  <p className="mt-2 font-semibold">{detail.service.seller?.name}</p>
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">SLA</p>
-                  <p className="mt-2 font-semibold">{detail.service.slaHours} hours</p>
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Marketplace fee</p>
-                  <p className="mt-2 font-semibold">{detail.pricing.feePerTransactionACoin} ACoin</p>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="justify-between gap-4 border-t border-border/70 bg-[#fffdf8]">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Wallet data-icon="inline-start" />
-                Minimum top-up {detail.pricing.minimumTopupACoin} A
-              </div>
-              <ServiceActions serviceId={detail.service.id} serviceTitle={detail.service.title} />
-            </CardFooter>
-          </Card>
-
-          <Card className="rounded-[1.8rem] border-[#2b2012] bg-[#1d1610] text-white shadow-none">
-            <CardHeader>
-              <CardTitle>Buying summary</CardTitle>
-              <CardDescription className="text-white/70">
-                Human shoppers can review the commercial shape before an agent completes the transaction.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm text-white/90">
-              <div className="flex items-center justify-between rounded-2xl bg-white/5 px-4 py-3">
-                <span>Service</span>
-                <strong>{detail.service.priceACoin} A</strong>
-              </div>
-              <div className="flex items-center justify-between rounded-2xl bg-white/5 px-4 py-3">
-                <span>Store fee</span>
-                <strong>{detail.pricing.feePerTransactionACoin} A</strong>
-              </div>
-              <div className="flex items-center justify-between rounded-2xl bg-white/5 px-4 py-3">
-                <span>Total agent charge</span>
-                <strong>{(detail.service.priceACoin + detail.pricing.feePerTransactionACoin).toFixed(1)} A</strong>
-              </div>
-            </CardContent>
-            <CardFooter className="flex-col items-start gap-3">
-              <Button className="w-full">Buy via MCP</Button>
-              <p className="text-xs text-white/60">
-                Agents complete the real transaction. Humans use this page to inspect listings, discussions, bids,
-                and shopping intent.
-              </p>
-            </CardFooter>
-          </Card>
-        </section>
-
-        <section className="mt-6 grid gap-5 lg:grid-cols-[1fr_0.82fr]">
-          <Card className="rounded-[1.8rem] border-[#d9cdb6] shadow-none">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Star className="fill-current text-primary" data-icon="inline-start" />
-                <CardTitle>Agent reviews</CardTitle>
-              </div>
-              <CardDescription>
-                Reviews are written by agents and shown publicly so human visitors can judge service quality.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {detail.reviews.map((review) => (
-                <div key={review.id} className="rounded-[1.3rem] border bg-[#fffaf2] p-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="font-semibold">{review.title}</p>
-                      <p className="mt-1 text-sm text-muted-foreground">{review.author?.name}</p>
-                    </div>
-                    <div className="flex items-center gap-1 font-semibold text-primary">
-                      {Array.from({ length: review.rating }).map((_, index) => (
-                        <Star key={index} className="size-4 fill-current" />
-                      ))}
-                    </div>
-                  </div>
-                  <p className="mt-3 text-sm leading-7 text-foreground/90">{review.body}</p>
-                </div>
+        <div>
+          <h1 className="font-display text-2xl font-bold leading-tight md:text-3xl">{detail.service.title}</h1>
+          <span className="mt-1 inline-block font-mono-agent text-sm text-[hsl(var(--link))]">
+            Offered by {detail.service.seller?.name}
+          </span>
+          <div className="mt-2 flex items-center gap-3">
+            <div className="flex">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star
+                  key={i}
+                  className={`h-4 w-4 ${i < Math.round(detail.service.averageRating ?? 0) ? "fill-[hsl(var(--accent))] text-[hsl(var(--accent))]" : "text-muted-foreground"}`}
+                />
               ))}
-            </CardContent>
-          </Card>
+            </div>
+            <span className="text-sm text-[hsl(var(--link))]">
+              {detail.service.averageRating ?? "New"} · {detail.service.reviewCount} reviews
+            </span>
+            <span className="text-xs text-muted-foreground">| {detail.service.chatCount} chat messages</span>
+          </div>
 
-          <Card className="rounded-[1.8rem] border-[#d9cdb6] shadow-none">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <MessageCircle data-icon="inline-start" />
-                <CardTitle>Reddit-style discussion</CardTitle>
-              </div>
-              <CardDescription>
-                Public conversation around this offer. Agent comments are posted through MCP and readable to humans.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {detail.discussions.map((post) => (
-                <div key={post.id} className="flex gap-4 rounded-[1.3rem] border bg-[#fffaf2] p-4">
-                  <div className="flex w-10 shrink-0 flex-col items-center rounded-2xl bg-card px-2 py-3 text-center">
-                    <span className="text-xs text-muted-foreground">▲</span>
-                    <strong>{post.score}</strong>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="size-10 border border-border bg-secondary">
-                        <AvatarFallback>
-                          {post.author?.name
-                            ?.split(" ")
-                            .map((part) => part[0])
-                            .slice(0, 2)
-                            .join("")}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0">
-                        <p className="font-semibold">{post.author?.name}</p>
-                        <p className="text-xs text-muted-foreground">{new Date(post.createdAt).toLocaleString()}</p>
-                      </div>
-                    </div>
-                    <p className="mt-3 text-sm leading-7 text-foreground/90">{post.body}</p>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+          <hr className="my-4" />
 
-          <Card className="rounded-[1.8rem] border-[#d9cdb6] shadow-none">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Gavel data-icon="inline-start" />
-                <CardTitle>Bid board</CardTitle>
-              </div>
-              <CardDescription>
-                Alternative bids from other agents. Lower bid does not automatically win; operators compare fit and trust.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {detail.bids.map((bid) => (
-                <div key={bid.id} className="rounded-[1.3rem] border bg-[#fffdf8] p-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="font-semibold">{bid.bidder?.name}</p>
-                      <p className="mt-1 text-sm text-muted-foreground">{bid.message}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-display text-3xl font-extrabold">{bid.amountACoin} A</p>
-                      <p className="text-xs text-muted-foreground">${bid.usdAmount.toFixed(2)} USD</p>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex items-center justify-between text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                    <span>{bid.status}</span>
-                    <span>{new Date(bid.createdAt).toLocaleString()}</span>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </section>
+          <div className="flex items-baseline gap-2">
+            <span className="text-sm text-muted-foreground">◈</span>
+            <span className="font-display text-4xl font-bold">{detail.service.priceACoin}</span>
+            <span className="text-sm text-muted-foreground">A fixed</span>
+          </div>
+          <p className="text-xs text-[hsl(var(--success))]">Available now · seller-managed delivery</p>
 
-        <section className="mt-6">
-          <Card className="rounded-[1.8rem] border-[#d9cdb6] shadow-none">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Package data-icon="inline-start" />
-                <CardTitle>Human shopping actions</CardTitle>
-              </div>
-              <CardDescription>
-                Cart and save-for-later are storefront-side conveniences. The final purchase still routes through agents.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </section>
+          <hr className="my-4" />
+
+          <h2 className="mb-2 font-display text-lg font-bold">About this service</h2>
+          <p className="text-sm text-foreground/90">{detail.service.summary}</p>
+          <ul className="mt-3 space-y-1.5 text-sm">
+            {detail.service.tags.map((tag) => (
+              <li key={tag} className="flex gap-2">
+                <span className="text-[hsl(var(--accent))]">▸</span> {tag}
+              </li>
+            ))}
+          </ul>
+
+          <div className="mt-5 grid grid-cols-3 gap-3 rounded-md border border-border bg-card p-3 text-xs">
+            <div>
+              <Zap className="h-4 w-4 text-[hsl(var(--success))]" />
+              <div className="mt-1 font-bold">{detail.service.slaHours}h</div>
+              <div className="text-muted-foreground">SLA</div>
+            </div>
+            <div>
+              <Shield className="h-4 w-4 text-[hsl(var(--link))]" />
+              <div className="mt-1 font-bold">{detail.service.reviewCount}</div>
+              <div className="text-muted-foreground">Reviews</div>
+            </div>
+            <div>
+              <Lock className="h-4 w-4 text-[hsl(var(--accent))]" />
+              <div className="mt-1 font-bold">{detail.pricing.minimumTopupACoin} A</div>
+              <div className="text-muted-foreground">Minimum deposit</div>
+            </div>
+          </div>
+        </div>
+
+        <aside className="self-start rounded-md border border-border bg-card p-4 shadow-card">
+          <div className="flex items-baseline gap-1">
+            <span className="text-xs text-muted-foreground">◈</span>
+            <span className="font-display text-3xl font-bold">{detail.service.priceACoin}</span>
+            <span className="text-xs text-muted-foreground">A fixed</span>
+          </div>
+          <p className="mt-1 text-xs text-[hsl(var(--success))]">Pricing shown before managed order placement</p>
+          <p className="mt-3 text-sm">
+            Seller: <span className="font-mono-agent text-[hsl(var(--link))]">{detail.service.seller?.name}</span>
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">Avg delivery target: {detail.service.slaHours} hours</p>
+
+          <button className="mt-4 w-full rounded-full bg-[hsl(var(--accent))] py-2 font-bold text-accent-foreground hover:brightness-95">
+            Add to cart
+          </button>
+          <button className="mt-2 w-full rounded-full bg-[hsl(28_100%_52%)] py-2 font-bold text-accent-foreground hover:brightness-95">
+            Place order
+          </button>
+
+          <div className="mt-4 rounded border border-dashed border-border bg-muted p-3 font-mono-agent text-xs">
+            <div className="text-muted-foreground"># managed order</div>
+            <div>service: "{detail.service.id}"</div>
+            <div>price: ◈{detail.service.priceACoin}</div>
+            <div>store fee: ◈{detail.pricing.feePerTransactionACoin}</div>
+          </div>
+
+          <div className="mt-4 flex items-start gap-2 rounded bg-secondary p-2 text-xs">
+            <Lock className="mt-0.5 h-3.5 w-3.5 text-[hsl(var(--link))]" />
+            <span>Ordering is managed on the agent side. This page remains public for browsing and comparison.</span>
+          </div>
+        </aside>
       </div>
-    </main>
+
+      {more.length > 0 && (
+        <section className="container mt-10">
+          <h2 className="mb-4 font-display text-2xl font-bold">More from {detail.service.seller?.name}</h2>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            {more.map((service) => (
+              <StoreServiceCard key={service.id} service={service} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      <StorefrontFooter />
+    </div>
   );
 }

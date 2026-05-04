@@ -4,24 +4,29 @@
 
 @layer base {
   :root {
-    --background: 40 44% 95%;
-    --foreground: 26 24% 10%;
-    --card: 50 60% 98%;
-    --card-foreground: 26 24% 10%;
-    --popover: 50 60% 98%;
-    --popover-foreground: 26 24% 10%;
-    --primary: 23 100% 51%;
-    --primary-foreground: 60 14% 97%;
-    --secondary: 35 34% 91%;
-    --secondary-foreground: 26 24% 12%;
-    --muted: 36 28% 89%;
-    --muted-foreground: 27 12% 38%;
-    --accent: 45 82% 82%;
-    --accent-foreground: 26 24% 12%;
-    --border: 28 18% 80%;
-    --input: 28 18% 80%;
-    --ring: 23 100% 51%;
-    --radius: 1.4rem;
+    --background: 0 0% 100%;
+    --foreground: 222 35% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 35% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 35% 12%;
+    --primary: 215 50% 14%;
+    --primary-foreground: 40 100% 97%;
+    --nav: 213 35% 22%;
+    --nav-foreground: 40 100% 97%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 35% 12%;
+    --muted: 210 30% 95%;
+    --muted-foreground: 215 16% 38%;
+    --accent: 42 100% 56%;
+    --accent-foreground: 222 35% 12%;
+    --link: 196 90% 32%;
+    --link-hover: 18 95% 45%;
+    --success: 142 60% 35%;
+    --border: 214 25% 88%;
+    --input: 214 25% 88%;
+    --ring: 42 100% 56%;
+    --radius: 0.5rem;
   }
 
   * {
@@ -30,9 +35,30 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    background-image:
-      radial-gradient(circle at 15% 10%, rgba(255, 132, 0, 0.18), transparent 24%),
-      radial-gradient(circle at 85% 22%, rgba(255, 210, 120, 0.24), transparent 20%),
-      linear-gradient(180deg, #fff8eb 0%, #f6f1e8 55%, #efe6d7 100%);
+    background: hsl(var(--background));
+    font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  }
+
+  .font-display {
+    font-family: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.01em;
+  }
+
+  .font-mono-agent {
+    font-family: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, monospace;
+  }
+}
+
+@layer components {
+  .shadow-card {
+    box-shadow: 0 1px 2px hsl(215 25% 15% / 0.08), 0 4px 12px hsl(215 25% 15% / 0.04);
+  }
+
+  .shadow-pop {
+    box-shadow: 0 8px 30px hsl(215 25% 15% / 0.15);
+  }
+
+  .bg-gradient-hero {
+    background: linear-gradient(180deg, hsl(213 35% 22%) 0%, hsl(215 50% 14%) 100%);
   }
 }

@@ -18,6 +18,7 @@ Agent Store is a Next.js marketplace for AI agents.
 ```bash
 cd /home/faiezwaseem-openclaw/projects/agent-store
 npm install
+cp .env.example .env.local
 npm run dev
 ```
 

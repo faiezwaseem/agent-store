@@ -1,46 +1,95 @@
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { Menu, Search, ShoppingCart } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+type StorefrontHeaderProps = {
+  categories?: string[];
+};
 
-export function StorefrontHeader() {
+export function StorefrontHeader({ categories = [] }: StorefrontHeaderProps) {
   return (
-    <header className="border-b bg-[#16110a] text-white">
-      <div className="container flex flex-col gap-4 py-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-6">
-            <Link
-              href="/"
-              className="rounded-2xl bg-primary px-4 py-2 font-display text-2xl font-extrabold text-primary-foreground"
-            >
-              AgentStore
-            </Link>
-            <nav className="hidden items-center gap-5 text-sm text-white/80 md:flex">
-              <Link href="/">Home</Link>
-              <Link href="/listings">Listings</Link>
-              <a href="#how-it-works">How it works</a>
-              <a href="#agent-economy">ACoin economy</a>
-            </nav>
-          </div>
+    <header className="bg-primary text-primary-foreground">
+      <div className="flex items-center gap-2 px-3 py-2 md:gap-4">
+        <Link
+          href="/"
+          className="flex shrink-0 items-center gap-1.5 rounded border border-transparent px-2 py-1.5 hover:border-primary-foreground/60"
+        >
+          <span className="font-display text-2xl font-bold tracking-tight">
+            agent<span className="text-[hsl(var(--accent))]">store</span>
+          </span>
+          <span className="font-mono-agent text-[10px] text-primary-foreground/60">.hub</span>
+        </Link>
 
-          <div className="flex flex-1 items-center gap-3 lg:max-w-3xl">
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                className="h-12 rounded-2xl border-white/10 bg-white pl-11 text-base text-foreground"
-                placeholder="Search agent services, categories, sellers..."
-              />
-            </div>
-            <Button className="h-12 rounded-2xl px-6">Search</Button>
+        <button className="hidden items-center gap-1 rounded border border-transparent px-2 py-1.5 hover:border-primary-foreground/60 md:flex">
+          <div className="text-left leading-tight">
+            <div className="text-[11px] text-primary-foreground/70">Marketplace</div>
+            <div className="text-sm font-bold">Live catalog</div>
           </div>
+        </button>
 
-          <div className="flex items-center gap-2 text-sm">
-            <Badge className="bg-white/10 text-white hover:bg-white/10">Humans explore</Badge>
-            <Badge className="bg-primary text-primary-foreground hover:bg-primary">Agents transact</Badge>
-          </div>
+        <div className="flex flex-1 overflow-hidden rounded-md">
+          <select className="hidden bg-secondary px-2 text-xs text-foreground hover:bg-muted md:block" defaultValue="all">
+            <option value="all">All Services</option>
+            {categories.map((category) => (
+              <option key={category}>{category}</option>
+            ))}
+          </select>
+          <input
+            className="min-w-0 flex-1 bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none"
+            placeholder="Search services, sellers, reviews…"
+          />
+          <button className="bg-[hsl(var(--accent))] px-3 hover:brightness-95" aria-label="Search">
+            <Search className="h-5 w-5 text-accent-foreground" />
+          </button>
         </div>
+
+        <Link href="/listings" className="hidden flex-col items-start rounded border border-transparent px-2 py-1.5 hover:border-primary-foreground/60 lg:flex">
+          <span className="text-[11px] text-primary-foreground/70">Browse</span>
+          <span className="text-sm font-bold">All services</span>
+        </Link>
+
+        <Link href="/listings" className="hidden flex-col items-start rounded border border-transparent px-2 py-1.5 hover:border-primary-foreground/60 md:flex">
+          <span className="text-[11px] text-primary-foreground/70">Reviews</span>
+          <span className="text-sm font-bold">& Chat</span>
+        </Link>
+
+        <Link href="/listings" className="flex items-end gap-1 rounded border border-transparent px-2 py-1.5 hover:border-primary-foreground/60">
+          <div className="relative">
+            <ShoppingCart className="h-7 w-7" />
+            <span className="absolute -top-1 left-4 font-display text-sm font-bold text-[hsl(var(--accent))]">0</span>
+          </div>
+          <span className="hidden text-sm font-bold md:inline">Cart</span>
+        </Link>
+      </div>
+
+      <div className="flex items-center gap-1 overflow-x-auto bg-[hsl(var(--nav))] px-3 py-1.5 text-sm text-[hsl(var(--nav-foreground))]">
+        <Link
+          href="/listings"
+          className="flex shrink-0 items-center gap-1 rounded border border-transparent px-2 py-1 font-bold hover:border-[hsl(var(--nav-foreground))]/60"
+        >
+          <Menu className="h-4 w-4" /> All
+        </Link>
+        {[
+          "Top Sellers",
+          "New Releases",
+          "Documentation",
+          "QA",
+          "Automation",
+          "Growth",
+          "Saved for Later",
+          "Sell on AgentStore"
+        ].map((label) => (
+          <Link
+            key={label}
+            href="/listings"
+            className="shrink-0 rounded border border-transparent px-2 py-1 hover:border-[hsl(var(--nav-foreground))]/60"
+          >
+            {label}
+          </Link>
+        ))}
+        <span className="ml-auto hidden items-center gap-2 rounded bg-primary/40 px-2 py-1 font-mono-agent text-xs md:flex">
+          <span className="h-2 w-2 rounded-full bg-[hsl(var(--success))]" />
+          Network: live services available
+        </span>
       </div>
     </header>
   );
